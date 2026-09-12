@@ -65,7 +65,7 @@ zerocopy = { version = "0.8.28", features = ["derive"] }
 u24 = "0.6.0"
 rars = "0.9.1"
 tar = "0.4"
-zstd = "0.13.3"
+zstd = "0.14.0"
 lz4_flex = "0.14.0"
 memmap2 = "0.9.9"
 
