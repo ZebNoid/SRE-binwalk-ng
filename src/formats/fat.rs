@@ -83,8 +83,8 @@ struct FATBootSectorBytes {
 
 /// Parses a FAT header
 pub fn parse_fat_header(fat_data: &[u8]) -> Result<FATHeader, StructureError> {
-    // Number of FATs could technically be 1 or greater, but *should* be 2
-    const EXPECTED_FAT_COUNT: u8 = 2;
+    // Number of FATs is 1 or 2 (2 is the norm, 1 is valid on flash media)
+    const VALID_FAT_COUNTS: [u8; 2] = [1, 2];
 
     let valid_opcode1 = [0xEB, 0xE9];
     let valid_sector_sizes = [512, 1024, 2048, 4096];
@@ -106,7 +106,7 @@ pub fn parse_fat_header(fat_data: &[u8]) -> Result<FATHeader, StructureError> {
         // Reserved sectors must be at least 1
         if bs_header.reserved_sectors > 0 {
             // Sanity check the reported number of FATs, reported media type
-            if bs_header.fat_count == EXPECTED_FAT_COUNT
+            if VALID_FAT_COUNTS.contains(&bs_header.fat_count)
                 && valid_media_types.contains(&bs_header.media_type)
             {
                 // This field is set to 0 for FAT32, but populated by FAT12/16

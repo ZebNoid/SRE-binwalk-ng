@@ -33,11 +33,20 @@ pub fn ubifs_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult, 
     // Parse the UBIFS superblock header
     if let Ok(sb_header) = parse_ubi_superblock_header(&file_data[offset..]) {
         // Image size is the number of logical erase blocks times the size of each logical erase block
-        result.size = (sb_header.leb_count as usize)
+        let image_size = (sb_header.leb_count as usize)
             .checked_mul(sb_header.leb_size as usize)
             .ok_or(SignatureError)?;
-        result.description = format!("{}, total size: {} bytes", result.description, result.size);
-        return Ok(result);
+        if image_size == 0 {
+            return Err(SignatureError);
+        }
+        if let Some(image_end) = offset.checked_add(image_size)
+            && image_end <= file_data.len()
+        {
+            result.size = image_size;
+            result.description =
+                format!("{}, total size: {} bytes", result.description, result.size);
+            return Ok(result);
+        }
     }
 
     Err(SignatureError)

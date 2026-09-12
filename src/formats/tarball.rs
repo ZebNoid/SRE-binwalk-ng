@@ -164,7 +164,7 @@ fn tarball_octal(octal_string: &[u8]) -> usize {
 
     for octal_char in octal_string {
         // ASCII octal values should be ASCII
-        if *octal_char < 0x30 || *octal_char > 0x39 {
+        if *octal_char < 0x30 || *octal_char > 0x37 {
             break;
         } else {
             num *= 8;

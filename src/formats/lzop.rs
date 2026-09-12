@@ -223,7 +223,6 @@ pub fn parse_lzop_block_header(
     // Basic sanity check on the block header values
     if block_header.compressed_size != 0
         && block_header.uncompressed_size != 0
-        && block_header.uncompressed_checksum != 0
         && block_header.uncompressed_size <= MAX_UNCOMPRESSED_BLOCK_SIZE
     {
         let mut block_hdr_info = LZOPBlockHeader {

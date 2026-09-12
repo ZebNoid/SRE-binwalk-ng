@@ -58,7 +58,11 @@ pub fn tplink_rtos_parser(
         ..Default::default()
     };
 
-    if let Ok(fw_header) = parse_tplink_rtos_header(&file_data[offset..]) {
+    if let Ok(fw_header) = parse_tplink_rtos_header(&file_data[offset..])
+        && let Some(image_end) = offset.checked_add(fw_header.total_size as usize)
+        && image_end <= file_data.len()
+    {
+        result.size = fw_header.total_size as usize;
         result.description = format!(
             "{}, model number: {:X}, hardware version: {:X}.{:X}, header size: {} bytes, total size: {} bytes",
             result.description,

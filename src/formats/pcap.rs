@@ -194,7 +194,7 @@ pub fn pcapng_carver(
     // All pcap-ng files start with a section header; parse it
     if let Ok(section_header) = parse_pcapng_section_block(&file_data[offset..]) {
         let mut block_count: usize = 1;
-        let available_data = file_data.len() - offset;
+        let available_data = file_data.len();
         let mut next_offset = offset + section_header.block_size;
         let mut previous_offset = None;
 

@@ -52,11 +52,14 @@ pub fn dmg_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult, Si
             if let Some(xml_offset) = find_xml_property_list(file_data) {
                 // Make sure the XML data comes after the image data
                 if xml_offset >= dmg_footer.data_length {
-                    // Report the result
-                    result.size = offset
+                    // Report the result; size is measured from the rewound
+                    // image start, not from the footer match offset.
+                    let image_start = xml_offset - dmg_footer.data_length;
+                    let image_end = offset
                         .checked_add(dmg_footer.footer_size)
                         .ok_or(SignatureError)?;
-                    result.offset = xml_offset - dmg_footer.data_length;
+                    result.size = image_end.checked_sub(image_start).ok_or(SignatureError)?;
+                    result.offset = image_start;
                     result.description =
                         format!("{}, total size: {} bytes", result.description, result.size);
                     return Ok(result);

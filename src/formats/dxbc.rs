@@ -74,7 +74,12 @@ pub fn parse_dxbc_header(data: &[u8]) -> Result<DXBCHeader, StructureError> {
 
     // Sanity check: There are at least 14 known chunks, but most likely no more than 32.
     // Prevents the for loop from spiraling into an OOM on the offchance that both the magic and "one" check pass on garbage data
-    if count > 32 {
+    if count == 0 || count > 32 {
+        return Err(StructureError);
+    }
+
+    let total_size = header.total_size.get() as usize;
+    if total_size == 0 || total_size > data.len() {
         return Err(StructureError);
     }
 
@@ -97,7 +102,7 @@ pub fn parse_dxbc_header(data: &[u8]) -> Result<DXBCHeader, StructureError> {
     let chunk_ids = chunk_ids?;
 
     Ok(DXBCHeader {
-        size: header.total_size.get() as usize,
+        size: total_size,
         chunk_ids,
     })
 }

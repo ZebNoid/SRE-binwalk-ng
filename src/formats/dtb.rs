@@ -90,8 +90,9 @@ pub fn parse_dtb_header(dtb_data: &[u8]) -> Result<DTBHeader, StructureError> {
 
     // Parse the header
     let (dtb_header, _) = DTBHeaderBytes::ref_from_prefix(dtb_data).map_err(|_| StructureError)?;
-    // Check the reported versioning
-    if dtb_header.version.get() == EXPECTED_VERSION
+    // Accept the current version and the previous legacy version
+    if (dtb_header.version.get() == EXPECTED_VERSION
+        || dtb_header.version.get() == EXPECTED_COMPAT_VERSION)
         && dtb_header.min_compatible_version.get() == EXPECTED_COMPAT_VERSION
     {
         // Check required byte alignments for the specified offsets

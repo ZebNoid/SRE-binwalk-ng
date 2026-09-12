@@ -23,8 +23,6 @@ pub fn efigpt_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult,
         ..Default::default()
     };
 
-    let available_data = file_data.len() - offset;
-
     if offset >= MAGIC_OFFSET {
         // MBR actually starts this may bytes before the magic bytes
         result.offset = offset - MAGIC_OFFSET;
@@ -33,10 +31,13 @@ pub fn efigpt_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult,
         if let Some(efi_data) = file_data.get(result.offset..) {
             // Parse the EFI data; this also validates CRC so if this succeeds, confidence is high
             if let Ok(efi_header) = parse_efigpt_header(efi_data) {
+                // total_size is relative to the rewound image start, so
+                // compare against the bytes available from there.
+                let available_from_start = efi_data.len();
                 // Some EFI images have been observed to define partitions that extend beyond EOF.
                 // If that is the case, assume the EFI image extends to EOF.
-                if efi_header.total_size > available_data {
-                    result.size = available_data;
+                if efi_header.total_size > available_from_start {
+                    result.size = available_from_start;
                 } else {
                     result.size = efi_header.total_size;
                 }
@@ -94,6 +95,21 @@ pub fn parse_efigpt_header(efi_data: &[u8]) -> Result<EFIGPTHeader, StructureErr
         if gpt_header.reserved == 0 {
             // Make sure the revision field is the expected valid
             if gpt_header.revision == EXPECTED_REVISION {
+                // Validate the GPT header CRC (computed over header_size
+                // bytes with the CRC field zeroed).
+                let header_len = gpt_header.header_size.get() as usize;
+                let mut header_for_crc =
+                    gpt_data.get(0..header_len).ok_or(StructureError)?.to_vec();
+                const CRC_OFFSET: usize = 16;
+                const CRC_LEN: usize = 4;
+                let crc_end = CRC_OFFSET.checked_add(CRC_LEN).ok_or(StructureError)?;
+                if header_for_crc.len() < crc_end {
+                    return Err(StructureError);
+                }
+                header_for_crc[CRC_OFFSET..crc_end].fill(0);
+                if crc32(&header_for_crc) != gpt_header.header_crc.get() {
+                    return Err(StructureError);
+                }
                 // Calculate the start and end offsets of the partition entries.
                 // LBAs and table sizes that overflow usize cannot address data in
                 // the scanned file.

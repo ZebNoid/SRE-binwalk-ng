@@ -121,7 +121,7 @@ pub fn parse_mbr_image(mbr_data: &[u8]) -> Result<MBRHeader, StructureError> {
                     .map_err(|_| StructureError)?;
 
             // OS type of zero or LBA size of 0 can be ignored
-            if partition_entry.os_type != 0 || partition_entry.lba_size.get() != 0 {
+            if partition_entry.os_type != 0 && partition_entry.lba_size.get() != 0 {
                 // Validate the reported MBR status value
                 if ALLOWED_STATUS_VALUES.contains(&partition_entry.status) {
                     // Default to unknown partition type

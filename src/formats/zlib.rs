@@ -9,6 +9,7 @@ pub const DESCRIPTION: &str = "Zlib compressed file";
 /// Zlib magic bytes
 pub fn zlib_magic() -> Vec<Vec<u8>> {
     vec![
+        b"\x78\x01".to_vec(),
         b"\x78\x9c".to_vec(),
         b"\x78\xDA".to_vec(),
         b"\x78\x5E".to_vec(),

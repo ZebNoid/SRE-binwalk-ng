@@ -44,6 +44,8 @@ pub fn ext_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult, Si
 
     if let Some(ext_data) = file_data.get(result.offset..)
         && let Ok(ext_header) = parse_ext_header(ext_data)
+        && ext_header.image_size > 0
+        && ext_header.image_size <= ext_data.len()
     {
         result.size = ext_header.image_size;
         result.description = format!(

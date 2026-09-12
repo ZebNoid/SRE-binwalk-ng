@@ -93,7 +93,11 @@ pub fn jboot_stag_parser(
     if let Ok(stag_header) = parse_jboot_stag_header(&file_data[offset..]) {
         // Sanity check on the stag header reported size; it is expected that this
         // type of header describes a kernel, and should not take up the entire firmware image
-        if (offset + stag_header.header_size + stag_header.image_size) < file_data.len() {
+        if let Some(image_end) = offset
+            .checked_add(stag_header.header_size)
+            .and_then(|v| v.checked_add(stag_header.image_size))
+            && image_end <= file_data.len()
+        {
             // Only report the header size, confidence in this signature is low, don't
             // want to skip a bunch of data on a false positive
             result.size = stag_header.header_size;

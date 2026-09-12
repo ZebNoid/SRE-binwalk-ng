@@ -44,7 +44,7 @@ pub fn yaffs_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult, 
         .ok_or(SignatureError)?;
 
     // Sanity check the amount of available data
-    if is_offset_safe(available_data, required_min_offset, None) {
+    if required_min_offset <= available_data {
         // Detect endianness
         let endianness = match file_data[offset] {
             BIG_ENDIAN_FIRST_BYTE => Endianness::Big,
@@ -199,7 +199,7 @@ fn get_image_size(
 
     // Sanity check the calculated image size; should be large enough to fit MIN_NUMBER_OF_OBJS, but not extend past EOF
     if let Some(min_image_size) = block_size.checked_mul(MIN_NUMBER_OF_OBJS)
-        && min_image_size < image_size
+        && min_image_size <= image_size
         && image_size <= available_data
     {
         return Ok(image_size);
