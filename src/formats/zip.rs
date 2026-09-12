@@ -102,14 +102,14 @@ pub fn find_zip_eof(file_data: &[u8], offset: usize) -> Result<ZipEOCDInfo, Sign
         if let Some(eocd_data) = file_data.get(eocd_start..)
             && let Ok(eocd_header) = parse_eocd_header(eocd_data)
         {
-            // A truncated EOCD must not validate with a clamped size,
-            // continue scanning.
-            let eof = eocd_start
-                .checked_add(eocd_header.size)
-                .ok_or(SignatureError)?;
-            if eof > file_data.len() {
+            // Reject records whose declared size exceeds the remaining file data.
+            // When the size does not fit, continue scanning for another EOCD signature;
+            // only accept records with a fully contained comment.
+            let remaining = file_data.len() - eocd_start;
+            if eocd_header.size > remaining {
                 continue;
             }
+            let eof = eocd_start + eocd_header.size;
             return Ok(ZipEOCDInfo {
                 eof,
                 file_count: eocd_header.file_count,
