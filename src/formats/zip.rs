@@ -88,10 +88,8 @@ pub struct ZipEOCDInfo {
 
 /// Need to grep the rest of the file data to locate the end-of-central-directory header, which tells us where the ZIP file ends.
 pub fn find_zip_eof(file_data: &[u8], offset: usize) -> Result<ZipEOCDInfo, SignatureError> {
-    // EOCD record signature; disk numbers and entry counts follow and are
-    // validated by parse_eocd_header (nonzero disk numbers are valid for
-    // multi-disk archives).
-    const ZIP_EOCD_MAGIC: &[u8; 4] = b"PK\x05\x06";
+    // This magic string assumes that the disk_number and central_directory_disk_number are 0
+    const ZIP_EOCD_MAGIC: &[u8; 8] = b"PK\x05\x06\x00\x00\x00\x00";
 
     // Find all matching ZIP EOCD patterns
     for eocd_start in memmem::find_iter(&file_data[offset..], ZIP_EOCD_MAGIC) {
