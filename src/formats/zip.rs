@@ -102,10 +102,16 @@ pub fn find_zip_eof(file_data: &[u8], offset: usize) -> Result<ZipEOCDInfo, Sign
         if let Some(eocd_data) = file_data.get(eocd_start..)
             && let Ok(eocd_header) = parse_eocd_header(eocd_data)
         {
+            // A truncated EOCD must not validate with a clamped size,
+            // continue scanning.
+            let eof = eocd_start
+                .checked_add(eocd_header.size)
+                .ok_or(SignatureError)?;
+            if eof > file_data.len() {
+                continue;
+            }
             return Ok(ZipEOCDInfo {
-                // The comment length is attacker-controlled and may claim more bytes
-                // than the file holds; clamp the archive end to the actual file size.
-                eof: (eocd_start.saturating_add(eocd_header.size)).min(file_data.len()),
+                eof,
                 file_count: eocd_header.file_count,
             });
         }

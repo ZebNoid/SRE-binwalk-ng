@@ -96,8 +96,14 @@ pub fn parse_efigpt_header(efi_data: &[u8]) -> Result<EFIGPTHeader, StructureErr
             // Make sure the revision field is the expected valid
             if gpt_header.revision == EXPECTED_REVISION {
                 // Validate the GPT header CRC (computed over header_size
-                // bytes with the CRC field zeroed).
+                // bytes with the CRC field zeroed). Validate the declared
+                // length before allocating; it must cover the fixed header
+                // but cannot exceed one LBA.
                 let header_len = gpt_header.header_size.get() as usize;
+                if header_len < std::mem::size_of::<EFIGPTHeaderBytes>() || header_len > BLOCK_SIZE
+                {
+                    return Err(StructureError);
+                }
                 let mut header_for_crc =
                     gpt_data.get(0..header_len).ok_or(StructureError)?.to_vec();
                 const CRC_OFFSET: usize = 16;

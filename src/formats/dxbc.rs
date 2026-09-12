@@ -85,8 +85,16 @@ pub fn parse_dxbc_header(data: &[u8]) -> Result<DXBCHeader, StructureError> {
 
     let header_end = std::mem::size_of::<DXBCHeaderBytes>();
 
+    // All table and chunk reads must stay inside the declared container;
+    // otherwise a small valid `total_size` could validate bytes in trailing data.
+    let table_size = count.checked_mul(4).ok_or(StructureError)?;
+    let table_end = header_end.checked_add(table_size).ok_or(StructureError)?;
+    if table_end > total_size {
+        return Err(StructureError);
+    }
+
     let chunk_ids: Result<Vec<[u8; 4]>, StructureError> = data
-        .get(header_end..header_end + count * 4)
+        .get(header_end..table_end)
         .ok_or(StructureError)?
         .as_chunks::<4>()
         .0
@@ -94,7 +102,11 @@ pub fn parse_dxbc_header(data: &[u8]) -> Result<DXBCHeader, StructureError> {
         .map(|offset_bytes| {
             let offset = u32::from_le_bytes(*offset_bytes) as usize;
 
-            let chunk = data.get(offset..offset + 4).ok_or(StructureError)?;
+            let end = offset.checked_add(4).ok_or(StructureError)?;
+            if end > total_size {
+                return Err(StructureError);
+            }
+            let chunk = data.get(offset..end).ok_or(StructureError)?;
 
             chunk.try_into().map_err(|_| StructureError)
         })

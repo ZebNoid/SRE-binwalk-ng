@@ -343,8 +343,8 @@ pub fn extract_romfs(
 /// Maximum directory nesting depth processed by [`process_romfs_entries`].
 ///
 /// The `info` field of a directory entry (the offset of its first child) is
-/// attacker-controlled, so without a bound a crafted image can nest entries
-/// arbitrarily deep -- or point two directories at each other, recursing
+/// read from the image, so without a bound entries can nest arbitrarily
+/// deep -- or two directories can point at each other, recursing
 /// forever. The per-call `processed_entries` set cannot see cycles that span
 /// recursive calls, so the depth budget is what actually terminates them.
 const MAX_ROMFS_DEPTH: usize = 64;

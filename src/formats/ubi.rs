@@ -36,7 +36,8 @@ pub fn ubifs_parser(file_data: &[u8], offset: usize) -> Result<SignatureResult, 
         let image_size = (sb_header.leb_count as usize)
             .checked_mul(sb_header.leb_size as usize)
             .ok_or(SignatureError)?;
-        if image_size == 0 {
+        // The image must at least contain the superblock that was just validated
+        if image_size < UBI_SUPERBLOCK_SIZE {
             return Err(SignatureError);
         }
         if let Some(image_end) = offset.checked_add(image_size)
@@ -144,6 +145,13 @@ pub struct UbiSuperBlockHeader {
     pub leb_count: u32,
 }
 
+// Trailing superblock area covered by CRC but not modeled above.
+const SUPERBLOCK_STRUCTURE_EXTRA_SIZE: usize = 3968;
+
+/// Full UBIFS superblock size validated by `parse_ubi_superblock_header`.
+const UBI_SUPERBLOCK_SIZE: usize =
+    std::mem::size_of::<UbiSuperBlockHeaderBytes>() + SUPERBLOCK_STRUCTURE_EXTRA_SIZE;
+
 #[derive(FromBytes, KnownLayout, Unaligned, Immutable)]
 #[repr(C, packed)]
 struct UbiSuperBlockHeaderBytes {
@@ -187,11 +195,7 @@ pub fn parse_ubi_superblock_header(ubi_data: &[u8]) -> Result<UbiSuperBlockHeade
     const CRC_START_OFFSET: usize = 8;
     const SUPERBLOCK_NODE_TYPE: u8 = 6;
 
-    // There are some other fields in the superblock header that we don't parse because we don't really care about them...
-    const SUPERBLOCK_STRUCTURE_EXTRA_SIZE: usize = 3968;
-
-    let sb_struct_size: usize =
-        std::mem::size_of::<UbiSuperBlockHeaderBytes>() + SUPERBLOCK_STRUCTURE_EXTRA_SIZE;
+    let sb_struct_size: usize = UBI_SUPERBLOCK_SIZE;
 
     // Parse the UBI superblock header
     let (sb_header, _) =

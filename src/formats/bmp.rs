@@ -114,6 +114,12 @@ pub fn parse_bmp_file_header(bmp_data: &[u8]) -> Result<BMPFileHeader, Structure
         return Err(StructureError);
     }
 
+    // The declared file size must cover both headers; otherwise a header
+    // with e.g. bf_size=20 and bi_size=40 would parse as Ok.
+    if bf_size < std::mem::size_of::<RawHeader>() + dib_header_size as usize {
+        return Err(StructureError);
+    }
+
     // If everything is Ok so far, return a BMPFileHeader
     Ok(BMPFileHeader {
         size: bf_size,
@@ -172,7 +178,7 @@ pub fn extract_bmp_image(
         // its bitmap data lies outside bf_size.
         if bmp_file_header.bitmap_bits_offset
             >= (BMP_FILE_HEADER_SIZE + bmp_file_header.dib_header_size)
-            && bmp_file_header.bitmap_bits_offset <= bmp_file_header.size
+            && bmp_file_header.bitmap_bits_offset < bmp_file_header.size
         {
             // If it was parsed successfully, get the file size
             result.size = Some(bmp_file_header.size);
