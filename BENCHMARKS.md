@@ -142,17 +142,14 @@ benchmark against the previous run's output and reports per-metric deltas.
 branch) is an array of sanitized Gungraun `BenchmarkSummary` objects — one per
 benchmark, matching `cargo bench -- --output-format=json | jq -s`, with the
 volatile fields stripped (only `id`/`module_path`/`group` + each profile's
-`tool` and `data.total` are kept).
+`tool` and current per-metric `values.new` are kept; comparison history
+`old`/`change`/`regressions` is dropped).
 
 Requires gungraun `>=0.20` (summary schema v7): `profiles[].data.total.metrics`
 is flat (`metrics.Ir`, no `Callgrind`/`Dhat` wrapper key) and each metric is
-`{values: {new: n}}` with plain numbers — no `{Int: n}` wrappers, no
-`Left`/`Right`/`Both`. Timings (`started_at`, `duration_ns`, `process_ns`,
-...) and paths (`output_dir`, per-part `tool_run` PIDs) are dropped so
-identical runs are byte-comparable; see the [summary schema v7](https://github.com/gungraun/gungraun/blob/main/crates/gungraun-summary/schemas/summary.v7.schema.json).
-`scripts/bench-compare.py` understands both v7 and legacy v6
-(`profiles[].summaries.total.summary`, `Left`/`Int` wrappers) so a v7 run can
-still be diffed against an old v6 baseline during the transition; after the
-first `main` push post-upgrade the baseline is v7-only.
+`{values: {new: n}}` with plain numbers. Timings (`started_at`,
+`duration_ns`, `process_ns`, ...) and paths (`output_dir`, per-part `tool_run`
+PIDs) are dropped so identical runs are byte-comparable; see the [summary schema v7](https://github.com/gungraun/gungraun/blob/main/crates/gungraun-summary/schemas/summary.v7.schema.json).
 `scripts/bench-compare.py` reads two such arrays, diffs by summary `id`, and renders
-the verdict.
+the verdict. The pre-0.20 (v6) baseline was replaced on merge; v6 summaries
+are no longer understood.
