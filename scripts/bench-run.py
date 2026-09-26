@@ -4,8 +4,12 @@
 Provisions `gungraun-runner` (via `cargo binstall`, version taken from the
 `gungraun` dev-dependency in Cargo.toml) if missing or mismatched, runs
 `cargo bench`, and sanitizes the JSON output into a stable results file:
-PID-bearing and per-thread/part fields are dropped so identical runs produce
-byte-comparable output.
+PID-bearing, per-thread/part, path, and timing fields are dropped so
+identical runs produce byte-comparable output.
+
+Requires gungraun >=0.20 (summary schema v7: `profiles[].data`,
+plain-number metrics, `values: {new, old}`). Volatile fields (`started_at`,
+`duration_ns`, `process_ns`, `output_dir`, ...) are deliberately not stored.
 
 Run from the repo root (locally, or inside the Docker `dev` image with the
 repo mounted at /tmp/binwalk).
@@ -57,6 +61,30 @@ def ensure_runner(version: str) -> None:
     )
 
 
+def sanitize_summary(summary: dict) -> dict:
+    """Reduce one raw v7 BenchmarkSummary to deterministic, comparable fields.
+
+    Keeps `profiles[].data.total` (`metrics` + `regressions`). Drops `parts`
+    (PIDs), timings (`duration_ns`, `process_ns`, `started_at`, ...), and
+    paths (`output_dir`, ...). Top level keeps only `id`/`module_path`/
+    `group` (+ `profiles`).
+    """
+    profiles = []
+    for profile in summary.get("profiles") or []:
+        entry: dict = {"tool": profile.get("tool")}
+        if "data" in profile:
+            entry["data"] = {"total": (profile.get("data") or {}).get("total")}
+        profiles.append(entry)
+    out: dict = {
+        "id": summary.get("id"),
+        "module_path": summary.get("module_path"),
+        "profiles": profiles,
+    }
+    if summary.get("group") is not None:
+        out["group"] = summary.get("group")
+    return out
+
+
 def main() -> None:
     version = runner_version()
     ensure_runner(version)
@@ -81,21 +109,7 @@ def main() -> None:
         if not line:
             continue
         summary = json.loads(line)
-        results.append(
-            {
-                "id": summary.get("id"),
-                "module_path": summary.get("module_path"),
-                "profiles": [
-                    {
-                        "tool": profile.get("tool"),
-                        "summaries": {
-                            "total": (profile.get("summaries") or {}).get("total")
-                        },
-                    }
-                    for profile in (summary.get("profiles") or [])
-                ],
-            }
-        )
+        results.append(sanitize_summary(summary))
 
     (bench_dir / "results.json").write_text(json.dumps(results, sort_keys=True))
     print(f"Wrote {bench_dir / 'results.json'} ({len(results)} benchmarks)")

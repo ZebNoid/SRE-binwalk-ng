@@ -43,21 +43,58 @@ def by_id(items: list[Any]) -> dict[str, Any]:
 
 
 def unwrap(v: Any) -> Any:
+    """Unwrap one metric number from v6 or v7 encoding.
+
+    v7: plain JSON numbers (or a perf `StatisticalMetric` dict with a
+    `value` field holding the number). v6: `{"Int": n}` / `{"Float": f}`
+    wrappers.
+    """
     if isinstance(v, dict):
+        if "value" in v:
+            return unwrap(v["value"])
         return v.get("Int", v.get("Float"))
     return v
 
 
-# `profiles[].tool` uses the ValgrindTool const ("DHAT"), while the summary
-# map is keyed by the ToolMetricSummary variant name ("Dhat").
+def new_side_value(values: Any) -> Any:
+    """Extract the new-side number from a v7 `values: {new, old}` map."""
+    if not isinstance(values, dict):
+        return None
+    if "new" in values:
+        return unwrap(values["new"])
+    if "old" in values:
+        return unwrap(values["old"])
+    return None
+
+
+# v6 only: `profiles[].tool` uses the ValgrindTool const ("DHAT"), while the
+# summary map is keyed by the ToolMetricSummary variant name ("Dhat").
+# v7 needs no mapping: `data.total.metrics` is flat (`metrics.Ir`).
 SUMMARY_KEY = {"Callgrind": "Callgrind", "DHAT": "Dhat"}
 
 
 def metric_value(summary: dict[str, Any], tool: str, metric: str) -> Any:
-    """New-side value of (tool, metric) for one benchmark summary, or None."""
+    """New-side value of (tool, metric) for one benchmark summary, or None.
+
+    Handles v7 (`profiles[].data.total.metrics.{metric}.values.{new,old}`,
+    plain numbers) and v6 (`profiles[].summaries.total.summary.{Tool}...
+    .metrics.{Left,Both}` with `Int`/`Float` wrappers) summaries.
+    """
     for profile in summary.get("profiles") or []:
         if profile.get("tool") != tool:
             continue
+        # --- v7 (gungraun >=0.20) ---
+        data = profile.get("data")
+        if isinstance(data, dict):
+            total = data.get("total") or {}
+            metrics = total.get("metrics") or {}
+            md = metrics.get(metric)
+            if md is None:
+                return None
+            if not isinstance(md, dict):
+                return None
+            return new_side_value(md.get("values"))
+        # --- v6 (gungraun <0.20) fallback ---
         total = (profile.get("summaries") or {}).get("total") or {}
         tool_map = (total.get("summary") or {}).get(SUMMARY_KEY.get(tool, tool)) or {}
         md = tool_map.get(metric) or {}
