@@ -22,7 +22,7 @@ DASH = "—"
 
 # (tool name in summary, metric key, display label, threshold %)
 # Instructions + allocation totals are scheduling-independent; peak heap is not.
-METRICS = [
+METRICS: list[tuple[str, str, str, float]] = [
     ("Callgrind", "Ir", "instructions", 5.0),
     ("DHAT", "TotalBytes", "total bytes allocated", 5.0),
     ("DHAT", "TotalBlocks", "heap allocations", 5.0),
@@ -35,42 +35,51 @@ def load(path: str) -> list[Any]:
         return json.load(fh)
 
 
-def by_id(items: list[Any]) -> dict[str, Any]:
+def by_id(items: list[dict[str, Any]]) -> dict[str, Any]:
     out: dict[str, Any] = {}
     for item in items:
         out[item.get("id") or item.get("module_path") or ""] = item
     return out
 
 
-def unwrap(v: Any) -> Any:
+def unwrap(v: Any) -> float | None:
+    """Unwrap one metric number from its v7 encoding.
+
+    Plain JSON numbers pass through; a perf `StatisticalMetric` dict
+    contributes its `value` field.
+    """
     if isinstance(v, dict):
-        return v.get("Int", v.get("Float"))
+        return unwrap(v["value"]) if "value" in v else None
     return v
 
 
-# `profiles[].tool` uses the ValgrindTool const ("DHAT"), while the summary
-# map is keyed by the ToolMetricSummary variant name ("Dhat").
-SUMMARY_KEY = {"Callgrind": "Callgrind", "DHAT": "Dhat"}
+def new_side_value(values: Any) -> float | None:
+    """Extract the new-side number from a v7 `values: {new, old}` map."""
+    if not isinstance(values, dict):
+        return None
+    if "new" in values:
+        return unwrap(values["new"])
+    return None
 
 
-def metric_value(summary: dict[str, Any], tool: str, metric: str) -> Any:
+def metric_value(summary: dict[str, Any], tool: str, metric: str) -> float | None:
     """New-side value of (tool, metric) for one benchmark summary, or None."""
     for profile in summary.get("profiles") or []:
         if profile.get("tool") != tool:
             continue
-        total = (profile.get("summaries") or {}).get("total") or {}
-        tool_map = (total.get("summary") or {}).get(SUMMARY_KEY.get(tool, tool)) or {}
-        md = tool_map.get(metric) or {}
-        metrics = md.get("metrics") or {}
-        if "Left" in metrics:
-            return unwrap(metrics["Left"])
-        if "Both" in metrics:
-            return unwrap(metrics["Both"][0])
-        return None
+        data = profile.get("data")
+        if not isinstance(data, dict):
+            return None
+        total = data.get("total") or {}
+        metrics = total.get("metrics") or {}
+        md = metrics.get(metric)
+        if not isinstance(md, dict):
+            return None
+        return new_side_value(md.get("values"))
     return None
 
 
-def delta(a: Any, b: Any) -> float | None:
+def delta(a: float | None, b: float | None) -> float | None:
     if a is None or b is None or a == 0:
         return None
     return round((b - a) / a * 1000) / 10
@@ -80,11 +89,11 @@ def pct(x: float | None) -> str:
     return DASH if x is None else ("+" if x > 0 else "") + f"{x}%"
 
 
-def fmt_count(x: Any) -> str:
+def fmt_count(x: float | None) -> str:
     return DASH if x is None else f"{int(x):,}"
 
 
-def fmt_bytes(x: Any) -> str:
+def fmt_bytes(x: float | None) -> str:
     if x is None:
         return DASH
     n = int(x)

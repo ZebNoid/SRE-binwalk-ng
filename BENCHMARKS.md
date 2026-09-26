@@ -96,7 +96,8 @@ benchmark against the previous run's output and reports per-metric deltas.
   `docker run ... python3 scripts/bench-run.py` with the repo mounted. That
   script installs `gungraun-runner` at the exact version of the `gungraun`
   dev-dependency, runs `cargo bench -- --output-format=json`, and strips
-  run-specific fields (log/output paths, PIDs, per-thread parts) so identical
+  run-specific fields (log/output paths, PIDs, per-thread parts, timings like
+  `started_at`/`duration_ns`/`process_ns`, `output_dir`) so identical
   runs produce byte-comparable `results.json`. `results.json` is uploaded as a
   workflow artifact.
 - The `report` job lives in a separate `benchmark-report.yml` triggered by
@@ -140,10 +141,17 @@ benchmark against the previous run's output and reports per-metric deltas.
 ## results.json format
 
 `target/bench/results.json` (and `baseline.json` on the `benchmark-baseline`
-branch) is an array of Gungraun `BenchmarkSummary` objects — one per benchmark,
-matching `cargo bench -- --output-format=json | jq -s`, with the PID-bearing
-fields stripped. Schema: `profiles[].summaries.total.summary` keyed by
-`Callgrind` / `Dhat`, each metric a `{metrics: {"Left": {"Int": n}}}`
-object; see the [summary schema v6](https://github.com/gungraun/gungraun/blob/main/crates/gungraun-summary/schemas/summary.v6.schema.json).
+branch) is an array of sanitized Gungraun `BenchmarkSummary` objects — one per
+benchmark, matching `cargo bench -- --output-format=json | jq -s`, with the
+volatile fields stripped (only `id`/`module_path`/`group` + each profile's
+`tool` and current per-metric `values.new` are kept; comparison history
+`old`/`change`/`regressions` is dropped).
+
+Requires gungraun `>=0.20` (summary schema v7): `profiles[].data.total.metrics`
+is flat (`metrics.Ir`, no `Callgrind`/`Dhat` wrapper key) and each metric is
+`{values: {new: n}}` with plain numbers. Timings (`started_at`,
+`duration_ns`, `process_ns`, ...) and paths (`output_dir`, per-part `tool_run`
+PIDs) are dropped so identical runs are byte-comparable; see the [summary schema v7](https://github.com/gungraun/gungraun/blob/main/crates/gungraun-summary/schemas/summary.v7.schema.json).
 `scripts/bench-compare.py` reads two such arrays, diffs by summary `id`, and renders
-the verdict.
+the verdict. The pre-0.20 (v6) baseline was replaced on merge; v6 summaries
+are no longer understood.
