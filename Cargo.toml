@@ -1,8 +1,8 @@
 [package]
 name = "binwalk-ng"
-version = "3.1.1"
+version = "4.0.0"
 edition = "2024"
-authors = ["Craig Heffner <heffnercj@gmail.com>"]
+authors = ["Craig Heffner <heffnercj@gmail.com>", "impervius <63152795+impervius@users.noreply.github.com>"]
 license = "MIT"
 readme = "CARGO_README.md"
 repository = "https://github.com/binwalk-ng/binwalk-ng"

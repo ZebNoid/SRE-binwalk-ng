@@ -121,7 +121,7 @@ dependencies = [
 
 [[package]]
 name = "binwalk-ng"
-version = "3.1.1"
+version = "4.0.0"
 dependencies = [
  "adler2",
  "aho-corasick",
