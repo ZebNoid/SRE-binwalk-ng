@@ -79,7 +79,7 @@ pub fn dlink_fw_decrypt(
     const OUTPUT_FILE_NAME: &str = "decrypted.bin";
 
     let mut result = ExtractionResult::default();
-    if let Ok(decrypted_data) = delink::decrypt(&file_data[offset..]) {
+    if let Ok(decrypted_data) = delink_ng::decrypt(&file_data[offset..]) {
         // dap1325::decrypt prepends the 64-byte plaintext header to the decrypted body.
         // Strip it so the output starts directly with the uImage and doesn't
         // trigger a dlink_fw re-match during recursive extraction.

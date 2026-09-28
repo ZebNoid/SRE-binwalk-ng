@@ -172,7 +172,7 @@ pub fn extract_mh01_image(
                 let chroot = Chroot::new(output_directory);
 
                 // Try to decrypt the firmware
-                match delink::mh01::decrypt(mh01_data) {
+                match delink_ng::mh01::decrypt(mh01_data) {
                     Ok(decrypted_data) => {
                         // Write decrypted data to disk
                         result.success =
