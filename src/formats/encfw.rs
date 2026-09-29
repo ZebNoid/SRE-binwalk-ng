@@ -89,7 +89,7 @@ pub fn encfw_decrypt(
     const OUTPUT_FILE_NAME: &str = "decrypted.bin";
 
     let mut result = ExtractionResult::default();
-    if let Ok(decrypted_data) = delink::decrypt(&file_data[offset..]) {
+    if let Ok(decrypted_data) = delink_ng::decrypt(&file_data[offset..]) {
         result.success = true;
 
         // Write to file, if requested

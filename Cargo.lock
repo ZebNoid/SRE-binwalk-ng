@@ -121,7 +121,7 @@ dependencies = [
 
 [[package]]
 name = "binwalk-ng"
-version = "3.1.1"
+version = "4.0.0"
 dependencies = [
  "adler2",
  "aho-corasick",
@@ -132,7 +132,7 @@ dependencies = [
  "crc32c",
  "crc32fast",
  "dejavu",
- "delink",
+ "delink-ng",
  "entropy",
  "env_logger",
  "flate2",
@@ -468,13 +468,13 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "017b75b5fbc5806d490da36acc5c4d0e4ae1b69890d02f24c268da971813fbc1"
 
 [[package]]
-name = "delink"
-version = "0.1.0"
-source = "git+https://github.com/binwalk-ng/delink#8260cbb8db5caf8d0992b59b840d1490e09f8921"
+name = "delink-ng"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "54e9c68f0e83cdcdeaded5456fd35521044acdf25311e3edb00e2f56c3cc6952"
 dependencies = [
  "aes",
  "cbc",
- "env_logger",
  "hex",
  "hmac",
  "log",
@@ -993,9 +993,9 @@ checksum = "cf8baf1c55e62ffcace7a9f06f4bd9cd3f0c4beb022d3b367256b91b87513d98"
 
 [[package]]
 name = "memchr-n"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b6534ac6131ad2058f1bee755f1d232137c634ef91691e4cb84dd7dcb2d2339"
+checksum = "c8c12f01656118bac4406fe730671acd544decad59695796f12e784a2326339a"
 dependencies = [
  "fearless_simd",
  "fearless_simd_macros",
@@ -1753,9 +1753,9 @@ dependencies = [
 
 [[package]]
 name = "xxhash-rust"
-version = "0.8.18"
+version = "0.8.19"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aee1b19627c7c60102ab80d3a9cbe18de90bfe03bfa6c3715447681f0e8c8af6"
+checksum = "550a2b930b62486a393c52d5c3b84bff264b28aa437ed64694d31e93b1757af7"
 
 [[package]]
 name = "zerocopy"

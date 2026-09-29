@@ -22,7 +22,6 @@ DEBIAN_FRONTEND=noninteractive TZ=Etc/UTC apt-get -y install \
     liblz4-dev \
     libbz2-dev \
     zlib1g-dev \
-    libfontconfig1-dev \
     liblzma-dev \
     libssl-dev \
     cpio \
